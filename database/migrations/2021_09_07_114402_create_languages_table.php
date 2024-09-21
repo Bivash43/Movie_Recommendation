@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -14,13 +13,11 @@ class CreateLanguagesTable extends Migration
      */
     public function up()
     {
-        $q_createTable = "CREATE TABLE languages (
-            id BIGINT NOT NULL AUTO_INCREMENT,
-            short VARCHAR(2) NOT NULL,
-            PRIMARY KEY(id)
-        )";
-
-        DB::statement($q_createTable);
+        Schema::create('languages', function (Blueprint $table) {
+            $table->bigIncrements('id');  // Auto-incrementing id column
+            $table->string('short', 2);   // VARCHAR(2) column for 'short'
+            $table->timestamps();         // Add created_at and updated_at columns (optional)
+        });
     }
 
     /**

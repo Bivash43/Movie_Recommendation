@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -14,16 +13,17 @@ class CreateVotesTable extends Migration
      */
     public function up()
     {
-        $q_createTable = "CREATE TABLE votes (
-            id BIGINT NOT NULL AUTO_INCREMENT,
-            vote_average FLOAT NOT NULL,
-            vote_count INT NOT NULL,
-            movie_id BIGINT NOT NULL,
-            PRIMARY KEY(id),
-            FOREIGN KEY (movie_id) REFERENCES Movies(id) ON DELETE CASCADE
-        )";
+        Schema::create('votes', function (Blueprint $table) {
+            $table->bigIncrements('id');            // Auto-incrementing BIGINT primary key
+            $table->float('vote_average');          // FLOAT column for average vote
+            $table->integer('vote_count');          // INT column for vote count
+            $table->unsignedBigInteger('movie_id'); // Foreign key for movie_id
 
-        DB::statement($q_createTable);
+            // Defining the foreign key constraint
+            $table->foreign('movie_id')->references('id')->on('movies')->onDelete('cascade');
+
+            $table->timestamps();                  // Adds created_at and updated_at columns
+        });
     }
 
     /**

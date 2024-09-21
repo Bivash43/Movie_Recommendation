@@ -1,26 +1,35 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 class CreateActorsTable extends Migration
 {
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
     public function up()
     {
-        $q_createTable = "CREATE TABLE actors (
-            id INT NOT NULL,
-            actor VARCHAR(50) NOT NULL,
-            PRIMARY KEY(id)
-        )";
+        Schema::create('actors', function (Blueprint $table) {
+            $table->increments('id');           // Auto-incrementing INT primary key
+            $table->string('actor', 50);        // VARCHAR(50) for the actor name
 
-        DB::statement($q_createTable);
+            $table->timestamps();               // Adds created_at and updated_at columns
+        });
     }
-    
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
     public function down()
     {
-        Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('actors');
+        Schema::disableForeignKeyConstraints();  // Disable foreign key constraints before dropping
+        Schema::dropIfExists('actors');          // Drop the actors table
+        Schema::enableForeignKeyConstraints();   // Re-enable foreign key constraints
     }
 }

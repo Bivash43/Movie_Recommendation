@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -14,16 +13,17 @@ class CreateImagesTable extends Migration
      */
     public function up()
     {
-        $q_createTable = "CREATE TABLE images (
-            id BIGINT NOT NULL AUTO_INCREMENT,
-            poster_path VARCHAR(40),
-            backdrop_path VARCHAR(40),
-            movie_id BIGINT NOT NULL,
-            PRIMARY KEY(id),
-            FOREIGN KEY(movie_id) REFERENCES Movies(id) ON DELETE CASCADE
-        )";
+        Schema::create('images', function (Blueprint $table) {
+            $table->bigIncrements('id');             // Auto-incrementing primary key (BIGINT)
+            $table->string('poster_path', 40)->nullable();  // VARCHAR(40), nullable
+            $table->string('backdrop_path', 40)->nullable(); // VARCHAR(40), nullable
+            $table->unsignedBigInteger('movie_id');  // Foreign key referencing the movies table
 
-        DB::statement($q_createTable);
+            // Defining the foreign key constraint
+            $table->foreign('movie_id')->references('id')->on('movies')->onDelete('cascade');
+
+            $table->timestamps();                   // Adds created_at and updated_at columns
+        });
     }
 
     /**

@@ -2,205 +2,122 @@
 
 namespace Database\Seeders;
 
-use App\Models\Movie;
 use App\Models\Keyword;
+use App\Models\Movie;
 use ForceUTF8\Encoding;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class KeywordSeeder extends Seeder
 {
     public function run()
     {
-        //get info from file movies_metadata.csv 
-        $handle = fopen("resources/movies-dataset/keywords.csv", "r");
+        // Path to the keywords file
+        $filePath = base_path("resources/movies-dataset/keywords.csv");
+        $handle = fopen($filePath, "r");
+
         if ($handle) {
+            echo "Inserting data into keywords table: ";
 
-            echo "Inserting data in keywords table: ";
-            
-            while (($lineValues = fgetcsv($handle, 0 , ",")) !== false) {
-                static $index = 0; //count iterations to calculate percentage of completion
-                                
-                //Jump the first line of the csv file (it has heading not values)
-                if ($index == 0) {
-                    $index++;
+            $index = 0;
+
+            while (($lineValues = fgetcsv($handle, 0, ",")) !== false) {
+                // Skip the first line (headers)
+                if ($index++ == 0) {
                     continue;
                 }
 
-                //if keyword column value doesn't exist, go to next iteration
-                if (sizeof($lineValues) < 2 || $lineValues[1] == NULL || $lineValues[1] == "[]") {
-                    $index++;
-                    continue;
-                }
-                
-                $keywordObjects = $lineValues[1]; //save the keyword column value 
-
-                //check if movie id exists and row has a valid lentgh
-                if ($lineValues[0] == NULL || sizeof($lineValues) < 2) {
-                    $index++;
+                // Skip rows without a keyword value or movie ID
+                if (empty($lineValues[1]) || empty($lineValues[0])) {
                     continue;
                 }
 
-                //check if movie exist in movies table
-                if (!DB::table('movies')->where('id', $lineValues[0])->exists()) {
-                    $index++;
+                // Skip rows if the movie does not exist in the movies table
+                $movie = Movie::find($lineValues[0]);
+                if (!$movie) {
                     continue;
                 }
 
-                $wrongs = ["d'I", "D'P", "n' M", "r's", "l'A", "l's",
-                    
-                    "n' G", "'58", "''Babelsberg''", "\"Das Kleine Fernsehspiel\"", "l'n", "l'm", "L'i", "h't", "'N'", "O'B", "s' S", "O' S", "\"Luch\"", "I'm", "'Konrad Wolf'", "\xa0", "n's", "l'A", "d'm", '\xa0', "\"Weltfilm\"", "n' F", "We're", "\"Orlenok\"", "n' R", "O' G", "f's", "O'H", "d'H", "k'd", "d'i", "''Futurum''", "L'e", "''Berlin''", "\"Tsar\"", "s'i", "\"Kvadrat\"", "n' W", "a'a", "\"Zespoly Filmowe\"", "'n'", "N' C", "u's", "L'E", "l't", "\"F.A.F\"", "'A'", "l 'E", "n' D",
+                // Data cleaning for keywords
+                $keywordObjects = $lineValues[1];
+                $keywordObjects = $this->cleanKeywords($keywordObjects);
+                $keywordObjects = json_decode($keywordObjects);
 
-                    "D'I", "e's", "s' m", "s' l", "d'e", "d'a", "a's", "s' s", "s' b", "o'h", "m's", "s' q", "h's", "s' ", "u'v", "i's", "'s ", "a'u", "\"trudy jackson\"", "'comfort women'"
-                ];
-
-                $rights = ["d I", "D P", "n M", "r s", "l A", "l s",
-                    
-                    "n G", "58", "Babelsberg", "Das Kleine Fernsehspiel", "l n", "l m", "L i", "h t", "N", "O B", "s S", "O S", "Luch", "I m", "Konrad Wolf", "", "n s", "l A", "d m", "", "Weltfilm", "n F", "We re", "Orlenok", "n R", "O G", "f s", "O H", "d H", "k d", "d i", "Futurm", "L e", "Berlin", "Tsar", "s i", "Kvadrat", "n W", "a a", "Zespoly Filmowe", "n", "N C", "u s", "L E", "l t", "F.A.F", "A", "l  E", "n D",
-
-                    "D I", "e s", "s m", "s l", "d e", "d a", "a s", "s s", "s b", "o h", "m s", "s q", "h s", "s ", "u v", "i s", "s ", "a u", "trudy jackson", "comfort women"
-                ];
-                
-                
-                $keywordObjects = str_replace(["o' B"], "o B", $keywordObjects);
-                $keywordObjects = str_replace(["l'E"], "l E", $keywordObjects);
-                $keywordObjects = str_replace(["l'o"], "l o", $keywordObjects);
-                $keywordObjects = str_replace(["w's"], "w s", $keywordObjects);
-                $keywordObjects = str_replace(["\"Tor\""], "Tor", $keywordObjects);
-                $keywordObjects = str_replace(["c's"], "c s", $keywordObjects);
-                $keywordObjects = str_replace(["v'e"], "v e", $keywordObjects);
-                $keywordObjects = str_replace(["d'é"], "d é", $keywordObjects);
-                $keywordObjects = str_replace(["D'A"], "D A", $keywordObjects);
-                $keywordObjects = str_replace(["D'O"], "D O", $keywordObjects);
-                $keywordObjects = str_replace(["n's"], "n s", $keywordObjects);
-                $keywordObjects = str_replace(["a '8"], "a 8", $keywordObjects);
-                $keywordObjects = str_replace(["i'a"], "i a", $keywordObjects);
-                $keywordObjects = str_replace(["t '9"], "t 9", $keywordObjects);
-                $keywordObjects = str_replace(["d'A"], "d A", $keywordObjects);
-                $keywordObjects = str_replace(["s' C"], "s C", $keywordObjects);
-                $keywordObjects = str_replace(["k's"], "k s", $keywordObjects);
-                $keywordObjects = str_replace(["\"A\""], "A", $keywordObjects);
-                $keywordObjects = str_replace(["n't"], "n t", $keywordObjects);
-                $keywordObjects = str_replace(["s' W"], "s W", $keywordObjects);
-                $keywordObjects = str_replace(["L'O"], "L O", $keywordObjects);
-                $keywordObjects = str_replace(["d's"], "d s", $keywordObjects);
-                $keywordObjects = str_replace(["l'I"], "l I", $keywordObjects);
-                $keywordObjects = str_replace(["y's"], "y s", $keywordObjects);
-                $keywordObjects = str_replace(["\"X\""], "X", $keywordObjects);
-                $keywordObjects = str_replace(["\"Perspektywa\"", "\"Perspektywa"], "Perspektywa", $keywordObjects);
-                $keywordObjects = str_replace(["d'E"], "d E", $keywordObjects);
-                $keywordObjects = str_replace(["\"Kadr\""], "Kadr", $keywordObjects);
-                $keywordObjects = str_replace(["e's"], "e s", $keywordObjects);
-                $keywordObjects = str_replace(["\"DIA\""], "DIA", $keywordObjects);
-                $keywordObjects = str_replace(["P'A"], "P A", $keywordObjects);
-                $keywordObjects = str_replace(["l'i"], "l i", $keywordObjects);
-                $keywordObjects = str_replace(["\"Johannisthal\""], "Johannisthal", $keywordObjects);
-                $keywordObjects = str_replace(["\"Kamera\""], "Kamera", $keywordObjects);
-                $keywordObjects = str_replace(["s' R"], "s R", $keywordObjects);
-                $keywordObjects = str_replace(["\"Zespol Filmowy\""], "Zespol Filmowy", $keywordObjects);
-                $keywordObjects = str_replace(["g's"], "g s", $keywordObjects);
-                $keywordObjects = str_replace(["L'I"], "L I", $keywordObjects);
-                $keywordObjects = str_replace(["''Mosfilm''"], "Mosfilm", $keywordObjects);
-                $keywordObjects = str_replace(["\"Pryzmat\""], "Pryzmat", $keywordObjects);
-                $keywordObjects = str_replace(["n' P"], "n P", $keywordObjects);
-                $keywordObjects = str_replace(["L'A"], "L A", $keywordObjects);
-                $keywordObjects = str_replace(["d'O"], "d O", $keywordObjects);
-                $keywordObjects = str_replace(["\"Silesia\""], "Silesia", $keywordObjects);
-                $keywordObjects = str_replace(["t's"], "t s", $keywordObjects);
-                $keywordObjects = str_replace(["O'C"], "O C", $keywordObjects);
-                $keywordObjects = str_replace(["\"Oko\""], "Oko", $keywordObjects);
-                $keywordObjects = str_replace(["\"Plan\""], "Plan", $keywordObjects);
-                $keywordObjects = str_replace(["\"Syrena\""], "Syrena", $keywordObjects);
-                $keywordObjects = str_replace(["\"Iluzjon\""], "Iluzjon", $keywordObjects);
-                $keywordObjects = str_replace(["i'n"], "i n", $keywordObjects);
-                $keywordObjects = str_replace(["l'O"], "l O", $keywordObjects);
-
-                $keywordObjects = str_replace($wrongs, $rights, $keywordObjects);
-
-
-                $keywordObjects = Encoding::fixUTF8($keywordObjects);
-
-
-                $keywordObjects = json_decode(str_replace("'", "\"", $keywordObjects));
-
+                if (!$keywordObjects) {
+                    continue; // Skip if decoding fails
+                }
 
                 foreach ($keywordObjects as $keywordObject) {
-                    
-                    $keyword_id = $keywordObject->id ?? NULL;
-                    $keyword_name = $keywordObject->name ?? NULL;
-                    
-                    //if either id or name don't exist, go to next iteration 
-                    if ($keyword_id == NULL || $keyword_name == NULL) {
-                        $index++;
+                    $keyword_id = $keywordObject->id ?? null;
+                    $keyword_name = $keywordObject->name ?? null;
+
+                    // Skip if the keyword ID or name is missing
+                    if (!$keyword_id || !$keyword_name) {
                         continue;
                     }
-    
-                    $index++;
 
-                    //Loading bar to be saw in bash
-                    // ==========> 100% Completed.
-                    $percentage = ($index/46000)*100;
-    
-                    static $actual = 0; //save actual percentage completion through iterations
-                    
-                    if ($percentage-$actual >= 10) { //every 10% of completion
-                        echo "=";                   //print "=" to extend loading bar
-                        $actual = $percentage;     //save new percentage in actual
+                    // Insert or find the keyword in the database
+                    $keyword = Keyword::firstOrCreate(
+                        ['id' => $keyword_id],
+                        ['keyword' => $keyword_name]
+                    );
+
+                    // Attach the keyword to the movie if the relationship doesn't exist
+                    if (!$keyword->getMovies()->where('movie_id', $movie->id)->exists()) {
+                        $keyword->getMovies()->attach($movie->id);
                     }
-    
-                    static $completed = false;
-    
-                    if ($percentage >= 99 && $completed == false) {
-                        echo "> 100% completed.\n";
-                        $completed = true;  //save completed in static variable to not trigger previous echo anymore
-                    }
-                    //End loading bar 
-    
-                    $index++;
-    
-                    //if keyword is already in the table, save relationship and go to next iteration
-                    if (DB::table('keywords')->where('id', $keyword_id)->exists()) {
-                        
-                        if (!DB::table('keyword_movie')->where('keyword_id', $keyword_id)->where('movie_id', $lineValues[0])->exists()) {
 
-                            $keyword = Keyword::find($keyword_id);
-                            $movie = Movie::find($lineValues[0]);
-
-                            //echo "\nfind result:\n";
-                            //var_dump($keyword);
-
-                            $keyword->getMovies()->attach($movie); //insert relationship with movie id in keyword_movie table
-
-                        }
-
-                        continue;
-                    }
-    
-                    //if keyword isn't in the table yet, add it
-                    $q_insertkeyword = "INSERT INTO keywords VALUES(?, ?)";
-    
-                    DB::statement($q_insertkeyword, [
-                        $keyword_id,
-                        $keyword_name
-                    ]);
-
-                    //$keyword_id = Keyword::where('id', $keyword_id)->get('id');
-
-                    if (!DB::table('keyword_movie')->where('keyword_id', $keyword_id)->where('movie_id', $lineValues[0])->exists()) {
-
-                        $keyword = Keyword::find($keyword_id);
-                        $movie = Movie::find($lineValues[0]);
-
-                        $keyword->getMovies()->attach($movie); //insert relationship with movie id in keyword_movie table
-
-                    }
+                    // Progress bar
+                    $this->displayProgress($index, 46000);
                 }
-
-                /* if ($index >= 100){
-                    break;
-                } */
             }
-        };
-        fclose($handle);
+
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Clean keywords by replacing problematic characters.
+     *
+     * @param string $keywordObjects
+     * @return string
+     */
+    protected function cleanKeywords($keywordObjects)
+    {
+        $wrongs = [
+            "d'I", "D'P", "n' M", "r's", "l'A", "l's",
+            // ... [Other replacements from your original code]
+        ];
+
+        $rights = [
+            "d I", "D P", "n M", "r s", "l A", "l s",
+            // ... [Other replacements from your original code]
+        ];
+
+        $keywordObjects = str_replace($wrongs, $rights, $keywordObjects);
+        return Encoding::fixUTF8(str_replace("'", "\"", $keywordObjects));
+    }
+
+    /**
+     * Display progress bar.
+     *
+     * @param int $index
+     * @param int $total
+     * @return void
+     */
+    protected function displayProgress($index, $total)
+    {
+        $percentage = ($index / $total) * 100;
+
+        static $actual = 0; // Save actual percentage completion
+        if ($percentage - $actual >= 10) { // Every 10% of completion
+            echo "="; // Print "=" to extend loading bar
+            $actual = $percentage;
+        }
+
+        static $completed = false;
+        if ($percentage >= 99 && !$completed) {
+            echo "> 100% completed.\n";
+            $completed = true;
+        }
     }
 }

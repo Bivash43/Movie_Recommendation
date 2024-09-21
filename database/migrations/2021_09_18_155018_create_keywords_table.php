@@ -1,26 +1,35 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 class CreateKeywordsTable extends Migration
 {
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
     public function up()
     {
-        $q_createTable = "CREATE TABLE keywords (
-            id INT NOT NULL,
-            keyword VARCHAR(50) NOT NULL,
-            PRIMARY KEY(id)
-        )";
+        Schema::create('keywords', function (Blueprint $table) {
+            $table->increments('id');             // Auto-incrementing INT primary key
+            $table->string('keyword', 50);        // VARCHAR(50) for the keyword
 
-        DB::statement($q_createTable);
+            $table->timestamps();                 // Adds created_at and updated_at columns
+        });
     }
 
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
     public function down()
     {
-        Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('keywords');
+        Schema::disableForeignKeyConstraints();   // Disable foreign key constraints before dropping
+        Schema::dropIfExists('keywords');         // Drop the keywords table
+        Schema::enableForeignKeyConstraints();    // Re-enable foreign key constraints
     }
 }

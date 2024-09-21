@@ -1,7 +1,7 @@
 <x-html-layout>
-	<x-slot name="page_title">Netflix</x-slot>
+	<x-slot name="page_title">Mero Cinema</x-slot>
 	<x-slot name="page_content">
-	
+
 	<!-- Header movie component details-->
 	<x-header-movie>
 		<x-slot name="movie_title">

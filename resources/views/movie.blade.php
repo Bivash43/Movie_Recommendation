@@ -1,6 +1,6 @@
 <x-html-layout>
     <x-slot name="page_title">
-        {{$movie->title ?? 'Netflix'}}
+        {{$movie->title ?? 'Mero Cinema'}}
     </x-slot>
 
     <x-slot name="page_content">
@@ -60,12 +60,12 @@
                 <h2 class="you-d-like text-white">Similar movies...</h2>
             </div>
         </div>
-        
+
         <!-- Movie recommended -->
         @foreach ($content_movies as $index => $movie)
         {{-- Every 2 movies, start a new row --}}
         @if ($index % 2 == 0)
-    <div class="row content_suggestions d-none align-items-md-stretch px-5 my-5">  
+    <div class="row content_suggestions d-none align-items-md-stretch px-5 my-5">
         @endif
         <x-movie-recommended>
             <x-slot name="index">
@@ -95,7 +95,7 @@
 				@endif
 			@endforeach
             </x-slot>
-    
+
             <x-slot name="movie_tags">
                 @foreach ($movie->getKeywords as $i=>$keyword)
 				@if ($i == 0)
@@ -107,15 +107,15 @@
 				@endif
 			@endforeach
             </x-slot>
-    
+
             <x-slot name="movie_cast">
                 actor, actress
             </x-slot>
-    
+
             <x-slot name="movie_year">
                 {{$movie->release_date}}
             </x-slot>
-    
+
             <x-slot name="movie_id">
                 {{$movie->id}}
             </x-slot>
@@ -135,12 +135,12 @@
                 <h2 class="you-d-like text-white">Users also liked...</h2>
             </div>
         </div>
-        
+
         <!-- Movie recommended -->
         @foreach ($collab_movies as $index => $movie)
         {{-- Every 2 movies, start a new row --}}
         @if ($index % 2 == 0)
-    <div class="row collab_suggestions d-none align-items-md-stretch px-5 my-5">  
+    <div class="row collab_suggestions d-none align-items-md-stretch px-5 my-5">
         @endif
         <x-movie-recommended>
             <x-slot name="index">
@@ -170,7 +170,7 @@
 				@endif
 			@endforeach
             </x-slot>
-    
+
             <x-slot name="movie_tags">
                 @foreach ($movie->getKeywords as $i=>$keyword)
 				@if ($i == 0)
@@ -182,15 +182,15 @@
 				@endif
 			@endforeach
             </x-slot>
-    
+
             <x-slot name="movie_cast">
                 actor, actress
             </x-slot>
-    
+
             <x-slot name="movie_year">
                 {{$movie->release_date}}
             </x-slot>
-    
+
             <x-slot name="movie_id">
                 {{$movie->id}}
             </x-slot>
@@ -210,9 +210,9 @@
             </div>
         </div>
 
-        
+
         <!-- Movie recommended -->
-        
+
         @foreach ($collab_movies as $index => $movie)
         <x-movie-recommended>
             <x-slot name="index">
@@ -234,19 +234,19 @@
             <x-slot name="movie_genres">
                 genre, genre
             </x-slot>
-    
+
             <x-slot name="movie_tags">
                 tag, tag
             </x-slot>
-    
+
             <x-slot name="movie_cast">
                 actor, actress
             </x-slot>
-    
+
             <x-slot name="movie_year">
                 2019
             </x-slot>
-    
+
             <x-slot name="movie_id">
                 {{$movie->id}}
             </x-slot>

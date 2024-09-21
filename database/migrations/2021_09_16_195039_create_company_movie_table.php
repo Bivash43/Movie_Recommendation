@@ -1,26 +1,36 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 class CreateCompanyMovieTable extends Migration
 {
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
     public function up()
     {
-        $q_createTable = "CREATE TABLE company_movie (
-            id INT NOT NULL AUTO_INCREMENT,
-            company_id INT NOT NULL,
-            movie_id BIGINT NOT NULL,
-            PRIMARY KEY(id),
-            FOREIGN KEY(movie_id) REFERENCES Movies(id) ON DELETE CASCADE,
-            FOREIGN KEY(company_id) REFERENCES Companies(id) ON DELETE CASCADE
-        )";
+        Schema::create('company_movie', function (Blueprint $table) {
+            $table->bigIncrements('id');             // Auto-incrementing primary key
+            $table->unsignedInteger('company_id');   // Foreign key for company_id
+            $table->unsignedBigInteger('movie_id');  // Foreign key for movie_id
 
-        DB::statement($q_createTable);
+            // Defining foreign key constraints
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->foreign('movie_id')->references('id')->on('movies')->onDelete('cascade');
+
+            $table->timestamps();                   // Adds created_at and updated_at columns
+        });
     }
 
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
     public function down()
     {
         Schema::dropIfExists('company_movie');

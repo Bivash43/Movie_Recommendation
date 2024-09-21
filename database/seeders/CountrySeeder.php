@@ -11,122 +11,83 @@ class CountrySeeder extends Seeder
 {
     public function run()
     {
-        //get info from file movies_metadata.csv 
-        $handle = fopen("resources/movies-dataset/movies_metadata.csv", "r");
+        // Get info from the file movies_metadata.csv
+        $filePath = base_path("resources/movies-dataset/movies_metadata.csv");
+        $handle = fopen($filePath, "r");
+
         if ($handle) {
+            echo "Inserting data into countries table: ";
 
-            echo "Inserting data in countries table: ";
+            $index = 0; // Count iterations for progress tracking
 
-            while (($lineValues = fgetcsv($handle, 0 , ",")) !== false) {
-                static $index = 0; //count iterations to calculate percentage of completion
-
-                //Jump the first line of the csv file (it has heading not values)
-                if ($index == 0) {
-                    $index++;
+            while (($lineValues = fgetcsv($handle, 0, ",")) !== false) {
+                // Skip the first line (headers)
+                if ($index++ == 0) {
                     continue;
                 }
 
-                //if country column value doesn't exist, go to next iteration
-                if (sizeof($lineValues) < 13 || $lineValues[13] == NULL || $lineValues[13] == "[]") {
-                    $index++;
-                    continue;
-                }
-                
-                $countryObjects = $lineValues[13]; //save the country column value 
-
-                //check if movie id exists and row has a valid lentgh
-                if ($lineValues[5] == NULL || sizeof($lineValues) < 20) {
-                    $index++;
+                // Skip rows where the country column doesn't exist or is invalid
+                if (empty($lineValues[13]) || $lineValues[13] == "[]") {
                     continue;
                 }
 
-                //check if movie exist in movies table
-                if (!DB::table('movies')->where('id', $lineValues[5])->exists()) {
-                    $index++;
+                $countryObjects = $lineValues[13]; // Country column value
+
+                // Check if movie ID exists and row has a valid length
+                if (empty($lineValues[5]) || count($lineValues) < 20) {
                     continue;
                 }
 
+                // Check if the movie exists in the movies table
+                if (!Movie::where('id', $lineValues[5])->exists()) {
+                    continue;
+                }
+
+                // Replace problematic characters and decode the country JSON
                 $wrongs = ["D'I", "e's"];
                 $rights = ["D I", "e s"];
-
                 $countryObjects = str_replace($wrongs, $rights, $countryObjects);
-
                 $countryObjects = json_decode(str_replace("'", "\"", $countryObjects));
 
-                foreach ($countryObjects as $countryObject) {
-                    
-                    $country_short = $countryObject->iso_3166_1 ?? NULL;
-                    $country_name = $countryObject->name ?? NULL;
-                    
-                    //if either short or name don't exist, go to next iteration 
-                    if ($country_short == NULL && $country_name == NULL) {
-                        $index++;
-                        continue;
-                    }
-    
-                    $index++;
-
-                    //Loading bar to be saw in bash
-                    // ==========> 100% Completed.
-                    $percentage = ($index/181000)*100;
-    
-                    static $actual = 0; //save actual percentage completion through iterations
-                    
-                    if ($percentage-$actual >= 10) { //every 10% of completion
-                        echo "=";                   //print "=" to extend loading bar
-                        $actual = $percentage;     //save new percentage in actual
-                    }
-    
-                    static $completed = false;
-    
-                    if ($percentage >= 99 && $completed == false) {
-                        echo "> 100% completed.\n";
-                        $completed = true;  //save completed in static variable to not trigger previous echo anymore
-                    }
-                    //End loading bar 
-    
-                    $index++;
-    
-                    //if country is already in the table, save relationship and go to next iteration
-                    if (DB::table('countries')->where('short', $country_short)->exists()) {
-
-                        $country_id = Country::where('short', $country_short)->get('id');
-                        
-                        if (!DB::table('country_movie')->where('country_id', $country_id)->where('movie_id', $lineValues[5])->exists()) {
-
-                            $country = Country::find($country_id);
-                            $movie = Movie::find($lineValues[5]);
-
-                            $country[0]->getMovies()->attach($movie); //insert relationship with movie id in country_movie table
-                        }
-
-                        continue;
-                    }
-    
-                    //if country isn't in the table yet, add it
-                    $q_insertcountry = "INSERT INTO countries VALUES(NULL, ?, ?)";
-    
-                    DB::statement($q_insertcountry, [
-                        $country_short,
-                        $country_name
-                    ]);
-
-                    $country_id = Country::where('short', $country_short)->get('id');
-
-                    if (!DB::table('country_movie')->where('country_id', $country_id)->where('movie_id', $lineValues[5])->exists()) {
-
-                        $country = Country::find($country_id);
-                        $movie = Movie::find($lineValues[5]);
-
-                        $country[0]->getMovies()->attach($movie); //insert relationship with movie id in country_movie table
-                    }
+                // If JSON decode fails, skip
+                if (!$countryObjects) {
+                    continue;
                 }
 
-                /* if ($index >= 100){
-                    break;
-                } */
+                foreach ($countryObjects as $countryObject) {
+                    $country_short = $countryObject->iso_3166_1 ?? null;
+                    $country_name = $countryObject->name ?? null;
+
+                    // Skip if country short code or name is missing
+                    if (!$country_short || !$country_name) {
+                        continue;
+                    }
+
+                    // Display progress (every 10% increment)
+                    $percentage = ($index / 181000) * 100;
+                    if ($percentage % 10 == 0) {
+                        echo "=";
+                    }
+                    if ($percentage >= 100) {
+                        echo "> 100% completed.\n";
+                    }
+
+                    // Check if country already exists, if not, create it
+                    $country = Country::firstOrCreate(
+                        ['short' => $country_short],
+                        ['country_name' => $country_name]
+                    );
+
+                    // Associate movie with country if the relationship doesn't already exist
+                    if (!$country->getMovies()->where('movie_id', $lineValues[5])->exists()) {
+                        $country->getMovies()->attach($lineValues[5]);
+                    }
+
+                    $index++;
+                }
             }
-        };
-        fclose($handle);
+
+            fclose($handle);
+        }
     }
 }

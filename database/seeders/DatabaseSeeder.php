@@ -15,14 +15,14 @@ class DatabaseSeeder extends Seeder
     {
         // \App\Models\User::factory(10)->create();
 
-        $this->call(LanguagesSeeder::class);
-        $this->call(MoviesSeeder::class);
-        $this->call(VoteSeeder::class);
-        $this->call(ImageSeeder::class);
-        $this->call(RatingSeeder::class);
-        $this->call(GenreSeeder::class);
-        $this->call(CompanySeeder::class);
-        $this->call(CountrySeeder::class);
+//        $this->call(LanguagesSeeder::class);
+//        $this->call(MoviesSeeder::class);
+//        $this->call(VoteSeeder::class);
+//        $this->call(ImageSeeder::class);
+//        $this->call(RatingSeeder::class);
+//        $this->call(GenreSeeder::class);
+//        $this->call(CompanySeeder::class);
+//        $this->call(CountrySeeder::class);
         $this->call(KeywordSeeder::class);
     }
 }

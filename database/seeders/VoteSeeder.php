@@ -14,83 +14,93 @@ class VoteSeeder extends Seeder
      */
     public function run()
     {
-        //get info from file movies_metadata.csv 
-        $handle = fopen("resources/movies-dataset/movies_metadata.csv", "r");
+        // Path to the movies_metadata.csv file
+        $filePath = base_path("resources/movies-dataset/movies_metadata.csv");
+        $handle = fopen($filePath, "r");
+
         if ($handle) {
+            echo "Inserting data into votes table: ";
 
-            echo "Inserting data in votes table: ";
+            $index = 0;
+            $batchSize = 5000;  // Number of records to insert at a time
+            $votes = [];        // Array to hold records for batch insert
 
-            while (($lineValues = fgetcsv($handle, 0 , ",")) !== false) {
-                static $index = 0; //count iterations to calculate percentage of completion
-
-                //check if movie id exists and row has a valid lentgh
-                if ($lineValues[5] == NULL || sizeof($lineValues) < 20) {
-                    $index++;
+            while (($lineValues = fgetcsv($handle, 0, ",")) !== false) {
+                // Skip the first row (headers)
+                if ($index++ == 0) {
                     continue;
                 }
 
-                //check if movie exist in movies table
+                // Check if the movie ID and the row length are valid
+                if (empty($lineValues[5]) || count($lineValues) < 20) {
+                    continue;
+                }
+
+                // Check if the movie exists in the movies table
                 if (!DB::table('movies')->where('id', $lineValues[5])->exists()) {
-                    $index++;
-                    continue;
-                }
-                
-                $vote_average = $lineValues[22]; //save the vote average column value 
-                $vote_count = $lineValues[23]; //save the vote average column value 
-
-                //if vote average has an invalid value, go to next iteration
-                if (!is_numeric($vote_average)){
-                    $index++;
-                    continue;
-                }
-                //if vote count has an invalid value, go to next iteration
-                if (!is_numeric($vote_count)){
-                    $index++;
                     continue;
                 }
 
-                //Jump the first line of the csv file (it has heading not values)
-                if ($index == 0) {
-                    $index++;
+                // Extract vote average and count
+                $vote_average = $lineValues[22] ?? null;
+                $vote_count = $lineValues[23] ?? null;
+
+                // Skip if vote average or count are not numeric
+                if (!is_numeric($vote_average) || !is_numeric($vote_count)) {
                     continue;
                 }
 
-                //Loading bar to be saw in bash
-                // ==========> 100% Completed.
-                $percentage = ($index/45575)*100;
+                // Add the vote record to the array for batch insert
+                $votes[] = [
+                    'vote_average' => $vote_average,
+                    'vote_count' => $vote_count,
+                    'movie_id' => $lineValues[5], // Movie ID
+                ];
 
-                static $actual = 0; //save actual percentage completion through iterations
-                
-                if ($percentage-$actual >= 10) { //every 10% of completion
-                    echo "=";                   //print "=" to extend loading bar
-                    $actual = $percentage;     //save new percentage in actual
+                // Insert records in batches for performance
+                if (count($votes) >= $batchSize) {
+                    DB::table('votes')->insert($votes);  // Batch insert
+                    $votes = [];  // Reset the array for the next batch
                 }
 
-                static $completed = false;
-
-                if ($percentage >= 99 && $completed == false) {
-                    echo "> 100% completed.\n";
-                    $completed = true;  //save completed in static variable to not trigger previous echo anymore
-                }
-                //End loading bar 
-
-                $index++;
-
-                //add vote to table
-                $q_insertVote = "INSERT INTO votes VALUES(NULL, ?, ?, ?)";
-
-                DB::statement($q_insertVote, [
-                    $vote_average,
-                    $vote_count,
-                    $lineValues[5], //movie id
-                ]);
-
-                /* if ($index >= 21){
-                    break;
-                } */
+                // Display progress
+                $this->displayProgress($index, 45575);
             }
-        };
-        fclose($handle);
+
+            // Insert any remaining records
+            if (!empty($votes)) {
+                DB::table('votes')->insert($votes);
+            }
+
+            echo "> 100% completed.\n";
+
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Display a progress bar.
+     *
+     * @param int $index
+     * @param int $total
+     * @return void
+     */
+    protected function displayProgress($index, $total)
+    {
+        $percentage = ($index / $total) * 100;
+
+        static $actual = 0;
+
+        if ($percentage - $actual >= 10) {  // Every 10% of completion
+            echo "=";  // Print "=" to extend the loading bar
+            $actual = $percentage;
+        }
+
+        static $completed = false;
+
+        if ($percentage >= 99 && !$completed) {
+            echo "> 100% completed.\n";
+            $completed = true;  // Avoid triggering completion message again
+        }
     }
 }
-

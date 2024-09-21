@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Movie;
+use App\Models\Language;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class MoviesSeeder extends Seeder
 {
@@ -15,71 +15,70 @@ class MoviesSeeder extends Seeder
      */
     public function run()
     {
-        //get info from file movies_metadata.csv 
-        $handle = fopen("resources/movies-dataset/movies_metadata.csv", "r");
+        // Path to the movies_metadata.csv file
+        $filePath = base_path("resources/movies-dataset/movies_metadata.csv");
+        $handle = fopen($filePath, "r");
+
         if ($handle) {
+            echo "Inserting data into movies table: ";
 
-            echo "Inserting data in movies table: ";
+            $index = 0;
 
-            while (($lineValues = fgetcsv($handle, 0 , ",")) !== false) {
-                static $index = 0;
-
-                if ($index == 0) {
-                    $index++;
+            while (($lineValues = fgetcsv($handle, 0, ",")) !== false) {
+                // Skip the first line (headers)
+                if ($index++ == 0) {
                     continue;
                 }
 
-                $percentage = ($index/45575)*100;
-
-                static $actual = 0;
-                
-                if ($percentage-$actual >= 10) {
-                    echo "=";
-                    $actual = $percentage;
-                }
-
-                static $completed = false;
-
-                if ($percentage >= 99 && $completed == false) {
-                    echo "> 100% completed.\n";
-                    $completed = true;
-                }
-
-                $index++;
-
-                //check if movie id exists and row has a valid lentgh
-                if (Movie::find($lineValues[5]) != NULL || sizeof($lineValues) < 20) {
+                // Check if the movie already exists or if the row has an invalid length
+                if (Movie::find($lineValues[5]) || count($lineValues) < 20) {
                     continue;
                 }
 
-                $language = '';
+                // Handle language: get the language ID or set it to null if invalid
+                $language = Language::where('short', $lineValues[7])->first();
+                $languageId = $language ? $language->id : null;
 
-                //if language column has an invalid value, replace it with null, else replace it with its id
-                if (DB::table('languages')->where('short', $lineValues[7])->exists()) {
-                    $results = (DB::table('languages')->select('id')->where('short', $lineValues[7])->get());
-                    
-                    $language = $results[0]->id;
-
-                } else {
-                    $language = NULL;
-                }
-
-                //add movie to table
-                $q_insertMovie = "INSERT INTO movies VALUES(?, ?, ?, ?, ?)";
-
-                DB::statement($q_insertMovie, [
-                    $lineValues[5], //id
-                    $lineValues[20], //title
-                    $lineValues[9], //overview
-                    (($lineValues[14] == '') ? NULL : $lineValues[14]), //release date
-                    $language
+                // Insert the movie using Eloquent
+                Movie::create([
+                    'id' => $lineValues[5], // Movie ID
+                    'title' => $lineValues[20] ?? '', // Title
+                    'overview' => $lineValues[9] ?? '', // Overview
+                    'release_date' => $lineValues[14] ?: null, // Release date
+                    'language_id' => $languageId, // Language ID
                 ]);
 
-                /* if ($index >= 21){
-                    break;
-                } */
+                // Display progress
+                $this->displayProgress($index, 45575);
             }
-        };
-        fclose($handle);
+
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Display a progress bar.
+     *
+     * @param int $index
+     * @param int $total
+     * @return void
+     */
+    protected function displayProgress($index, $total)
+    {
+        $percentage = ($index / $total) * 100;
+
+        static $actual = 0; // Save the actual percentage of completion
+
+        if ($percentage - $actual >= 10) { // Every 10% of completion
+            echo "="; // Print "=" to extend the loading bar
+            $actual = $percentage; // Update the actual percentage
+        }
+
+        static $completed = false;
+
+        if ($percentage >= 99 && !$completed) {
+            echo "> 100% completed.\n";
+            $completed = true; // Set completed to avoid triggering the final message again
+        }
     }
 }

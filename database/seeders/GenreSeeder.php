@@ -11,115 +11,72 @@ class GenreSeeder extends Seeder
 {
     public function run()
     {
-        //get info from file movies_metadata.csv 
-        $handle = fopen("resources/movies-dataset/movies_metadata.csv", "r");
+        // Get info from file movies_metadata.csv
+        $filePath = base_path("resources/movies-dataset/movies_metadata.csv");
+        $handle = fopen($filePath, "r");
+
         if ($handle) {
+            echo "Inserting data into genres table: ";
 
-            echo "Inserting data in genres table: ";
+            $index = 0; // Count iterations for progress tracking
 
-            while (($lineValues = fgetcsv($handle, 0 , ",")) !== false) {
-                static $index = 0; //count iterations to calculate percentage of completion
-
-                //Jump the first line of the csv file (it has heading not values)
-                if ($index == 0) {
-                    $index++;
+            while (($lineValues = fgetcsv($handle, 0, ",")) !== false) {
+                // Skip the first line (headers)
+                if ($index++ == 0) {
                     continue;
                 }
 
-                //if genre column value doesn't exist, go to next iteration
-                if ($lineValues[3] == NULL) {
-                    $index++;
-                    continue;
-                }
-                
-                $genreObjects = $lineValues[3]; //save the genre column value 
-
-                //check if movie id exists and row has a valid lentgh
-                if ($lineValues[5] == NULL || sizeof($lineValues) < 20) {
-                    $index++;
+                // Skip if the genre column doesn't exist or is invalid
+                if (empty($lineValues[3])) {
                     continue;
                 }
 
-                //check if movie exist in movies table
-                if (!DB::table('movies')->where('id', $lineValues[5])->exists()) {
-                    $index++;
+                $genreObjects = json_decode(str_replace("'", "\"", $lineValues[3]));
+
+                // Check if the movie ID exists and the row has a valid length
+                if (empty($lineValues[5]) || count($lineValues) < 20) {
                     continue;
                 }
 
-                $genreObjects = json_decode(str_replace("'", "\"", $genreObjects));
+                // Check if the movie exists in the movies table
+                $movie = Movie::find($lineValues[5]);
+                if (!$movie) {
+                    continue;
+                }
 
+                // Handle genres
                 foreach ($genreObjects as $genreObject) {
-                    
-                    $genre_id = $genreObject->id ?? NULL;
-                    $genre_name = $genreObject->name ?? NULL;
-                    
-                    //if id or name doesn't exist, go to next iteration 
-                    if ($genre_id == NULL || $genre_name == NULL) {
-                        $index++;
+                    $genre_id = $genreObject->id ?? null;
+                    $genre_name = $genreObject->name ?? null;
+
+                    // Skip if genre ID or name is missing
+                    if (!$genre_id || !$genre_name) {
                         continue;
                     }
-    
-                    $index++;
 
-                    //Loading bar to be saw in bash
-                    // ==========> 100% Completed.
-                    $percentage = ($index/181000)*100;
-    
-                    static $actual = 0; //save actual percentage completion through iterations
-                    
-                    if ($percentage-$actual >= 10) { //every 10% of completion
-                        echo "=";                   //print "=" to extend loading bar
-                        $actual = $percentage;     //save new percentage in actual
+                    // Display progress (every 10% increment)
+                    $percentage = ($index / 181000) * 100;
+                    if ($percentage % 10 == 0) {
+                        echo "=";
                     }
-    
-                    static $completed = false;
-    
-                    if ($percentage >= 99 && $completed == false) {
+                    if ($percentage >= 100) {
                         echo "> 100% completed.\n";
-                        $completed = true;  //save completed in static variable to not trigger previous echo anymore
                     }
-                    //End loading bar 
-    
-                    $index++;
-    
-                    //if genre is already in the table, save relationship and go to next iteration
-                    if (DB::table('genres')->where('id', $genre_id)->exists()) {
-                        
-                        if (!DB::table('genre_movie')->where('genre_id', $genre_id)->where('movie_id', $lineValues[5])->exists()) {
 
-                            $genre = Genre::find($genre_id);
-                            $movie = Movie::find($lineValues[5]);
+                    // Insert or find the genre in the database
+                    $genre = Genre::firstOrCreate(
+                        ['id' => $genre_id],
+                        ['genre' => $genre_name]
+                    );
 
-                            $genre->getMovies()->attach($movie); //insert relationship with movie id in genre_movie table
-                        }
-    
-                        //echo "iterazione $index check 6\n";
-
-                        continue;
-                    }
-    
-                    //if genre isn't in the table yet, add it
-                    $q_insertGenre = "INSERT INTO genres VALUES(?, ?)";
-    
-                    DB::statement($q_insertGenre, [
-                        $genre_id,
-                        $genre_name
-                    ]);
-
-                    if (!DB::table('genre_movie')->where('genre_id', $genre_id)->where('movie_id', $lineValues[5])->exists()) {
-
-                        $genre = Genre::find($genre_id);
-                        $movie = Movie::find($lineValues[5]);
-
-                        $genre->getMovies()->attach($movie); //insert relationship with movie id in genre_movie table
+                    // Attach the genre to the movie if the relationship doesn't exist
+                    if (!$genre->getMovies()->where('movie_id', $movie->id)->exists()) {
+                        $genre->getMovies()->attach($movie->id);
                     }
                 }
-
-                /* if ($index >= 100){
-                    break;
-                } */
             }
-        };
-        fclose($handle);
+
+            fclose($handle);
+        }
     }
 }

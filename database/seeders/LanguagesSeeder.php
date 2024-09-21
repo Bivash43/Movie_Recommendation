@@ -2,76 +2,75 @@
 
 namespace Database\Seeders;
 
-use App\Models\Movie;
 use App\Models\Language;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class LanguagesSeeder extends Seeder
 {
     public function run()
     {
-        //get info from file movies_metadata.csv 
-        $handle = fopen("resources/movies-dataset/movies_metadata.csv", "r");
+        // Path to the movies_metadata.csv file
+        $filePath = base_path("resources/movies-dataset/movies_metadata.csv");
+        $handle = fopen($filePath, "r");
+
         if ($handle) {
+            echo "Inserting data into the languages table: ";
 
-            echo "Inserting data in languages table: ";
+            $index = 0; // Counter for tracking progress
 
-            while (($lineValues = fgetcsv($handle, 0 , ",")) !== false) {
-                static $index = 0; //count iterations to calculate percentage of completion
-                
-                $languageShort = $lineValues[7]; //save the language column value 
-
-                //if languageShort has an invalid value, go to next iteration
-                if (!ctype_alpha($languageShort) || strlen($languageShort) != 2){
-                    $index++;
+            while (($lineValues = fgetcsv($handle, 0, ",")) !== false) {
+                // Skip the first line (headers)
+                if ($index++ == 0) {
                     continue;
                 }
 
-                //Jump the first line of the csv file (it has heading not values)
-                if ($index == 0) {
-                    $index++;
+                // Extract the language short code
+                $languageShort = $lineValues[7] ?? null;
+
+                // Validate the language short code (must be two alphabetic characters)
+                if (!$languageShort || !ctype_alpha($languageShort) || strlen($languageShort) != 2) {
                     continue;
                 }
 
-                //Loading bar to be saw in bash
-                // ==========> 100% Completed.
-                $percentage = ($index/45575)*100;
-
-                static $actual = 0; //save actual percentage completion through iterations
-                
-                if ($percentage-$actual >= 10) { //every 10% of completion
-                    echo "=";                   //print "=" to extend loading bar
-                    $actual = $percentage;     //save new percentage in actual
+                // Check if the language already exists in the database
+                if (!Language::where('short', $languageShort)->exists()) {
+                    // Insert the new language using Eloquent
+                    Language::create([
+                        'short' => $languageShort,
+                    ]);
                 }
 
-                static $completed = false;
-
-                if ($percentage >= 99 && $completed == false) {
-                    echo "> 100% completed.\n";
-                    $completed = true;  //save completed in static variable to not trigger previous echo anymore
-                }
-                //End loading bar 
-
-                $index++;
-
-                //if language is already in the table, go to next iteration
-                if (DB::table('languages')->where('short', $languageShort)->exists()) {
-                    continue;
-                }
-
-                //if language isn't in the table yet, add it
-                $q_insertLanguage = "INSERT INTO languages VALUES(NULL, ?)";
-
-                DB::statement($q_insertLanguage, [
-                    $languageShort, //language short
-                ]);
-
-                /* if ($index >= 21){
-                    break;
-                } */
+                // Display progress
+                $this->displayProgress($index, 45575);
             }
-        };
-        fclose($handle);
+
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Display a progress bar.
+     *
+     * @param int $index
+     * @param int $total
+     * @return void
+     */
+    protected function displayProgress($index, $total)
+    {
+        $percentage = ($index / $total) * 100;
+
+        static $actual = 0; // Save the actual percentage of completion
+
+        if ($percentage - $actual >= 10) { // Update the bar every 10% of completion
+            echo "="; // Print "=" to extend the loading bar
+            $actual = $percentage; // Update the actual percentage
+        }
+
+        static $completed = false;
+
+        if ($percentage >= 99 && !$completed) {
+            echo "> 100% completed.\n";
+            $completed = true; // Set completed to avoid triggering the final message again
+        }
     }
 }

@@ -1,7 +1,7 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg px-5">
     <div class="container-fluid">
-        <span class="navbar-brand">NETFLIX</span>
+        <span class="navbar-brand">Mero Cinema</span>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -15,7 +15,7 @@
             <form class="d-flex ms-auto">
                 <input class="form-control me-2" type="search" placeholder="Titles, cast, genres..." aria-label="Search">
                 <button class="btn searchButton" type="submit">Search</button>
-            </form> 
+            </form>
         </div>
     </div>
 </nav>
